@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>yiayia and friends® — World Clock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f4f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main {
+      flex: 1;
+      padding: 32px 20px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .header {
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .logo-img {
+      height: 30px;
+      width: auto;
+      display: block;
+    }
+
+    .header-divider { height: 1px; background: #e0deda; margin-top: 12px; }
+
+    /* ── Cards ── */
+    .clock-card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #e4e3df;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+    }
+
+    .card-left { display: flex; flex-direction: column; min-width: 185px; flex-shrink: 0; }
+    .city-row  { display: flex; align-items: center; gap: 6px; }
+    .flag      { font-size: 15px; line-height: 1; }
+    .city      { font-size: 13px; font-weight: 600; color: #1a1a1a; letter-spacing: -0.1px; }
+
+    .tz-badge {
+      font-size: 10px; font-weight: 500;
+      color: #555; background: #ebebeb;
+      border-radius: 4px; padding: 1px 5px; letter-spacing: 0.03em;
+    }
+
+    .time {
+      font-size: 25px; font-weight: 700; color: #1a1a1a;
+      letter-spacing: -0.5px; font-variant-numeric: tabular-nums;
+      line-height: 1.1; margin-top: 3px;
+    }
+
+    .date-display { font-size: 11px; color: #b5b3ae; margin-top: 2px; }
+
+    .v-divider { width: 1px; height: 46px; background: #e4e3df; flex-shrink: 0; }
+
+    .people { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+    .person {
+      display: flex; align-items: center; gap: 6px;
+      background: #f7f6f3; border: 1px solid #e4e3df;
+      border-radius: 20px; padding: 4px 10px 4px 5px;
+      text-decoration: none; cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .person:hover { background: #eceae4; border-color: #d5d3ce; }
+
+    .avatar {
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #fff;
+      text-transform: uppercase; flex-shrink: 0;
+    }
+
+    .person-name { font-size: 12px; font-weight: 500; color: #37352f; white-space: nowrap; }
+
+    /* ── Timeline ── */
+    .h-divider { height: 1px; background: #f0efeb; }
+
+    .timeline-scroll {
+      overflow-x: scroll; overflow-y: hidden;
+      scrollbar-width: none; -ms-overflow-style: none;
+      cursor: grab; background: #b8c4cc;
+    }
+    .timeline-scroll::-webkit-scrollbar { display: none; }
+    .timeline-scroll.grabbing { cursor: grabbing; }
+
+    /* Single-row track */
+    .hour-track {
+      display: flex;
+      height: 22px;
+      width: max-content;
+    }
+
+    .hour-col {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9.5px;
+      font-variant-numeric: tabular-nums;
+      color: #777;
+      border-right: 1px solid rgba(0,0,0,0.07);
+      user-select: none;
+      cursor: pointer;
+      transition: filter 0.1s;
+      white-space: nowrap;
+    }
+    .hour-col:hover:not(.current) { filter: brightness(0.92); }
+    .hour-col:last-child { border-right: none; }
+
+    /* Midnight = new day: show date label, stronger left border */
+    .hour-col.midnight {
+      border-left: 1.5px solid #d5d3ce;
+      font-size: 8px;
+      font-weight: 700;
+      color: #aaa;
+      letter-spacing: 0.02em;
+    }
+
+    .hour-col.current {
+      color: #fff;
+      font-weight: 700;
+      border-radius: 4px;
+    }
+    .hour-col.midnight.current { border-left: none; font-size: 9.5px; }
+
+    /* Half-hour marks */
+    .hour-col.half {
+      font-size: 8px;
+      color: #ccc;
+      border-right-color: #f5f4f2;
+    }
+    .hour-col.half.current { font-size: 9px; }
+
+    /* ── Copy popup ── */
+    #copy-popup {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      background: #fff;
+      border: 1px solid #e4e3df;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+      min-width: 240px;
+      max-width: 300px;
+    }
+
+    #copy-popup .popup-title {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: #9b9a97; margin-bottom: 10px;
+    }
+
+    #copy-popup .popup-select-all {
+      font-size: 10.5px; font-weight: 500; color: #aaa;
+      cursor: pointer; margin-bottom: 4px; text-align: right;
+      letter-spacing: 0.02em; user-select: none;
+    }
+    #copy-popup .popup-select-all:hover { color: #333; }
+
+    #copy-popup .popup-city-block {
+      display: flex; align-items: flex-start; gap: 9px;
+      padding: 7px 4px; border-bottom: 1px solid #f5f4f0;
+      width: 100%; cursor: pointer; border-radius: 6px;
+      margin: 0 -4px; width: calc(100% + 8px);
+    }
+    #copy-popup .popup-city-block:last-of-type { border-bottom: none; }
+    #copy-popup .popup-city-block:hover { background: #f7f6f3; }
+    #copy-popup .popup-city-block.unchecked { opacity: 0.45; }
+
+    #copy-popup .popup-city-block input[type="checkbox"] {
+      margin-top: 3px; flex-shrink: 0; cursor: pointer;
+      accent-color: #111; width: 14px; height: 14px;
+    }
+
+    #copy-popup .popup-city-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+
+    #copy-popup .popup-city-name {
+      font-size: 13px; font-weight: 600; color: #1a1a1a;
+      display: flex; align-items: center; gap: 6px;
+    }
+    #copy-popup .popup-tz {
+      font-size: 10px; font-weight: 500; color: #888;
+      background: #f0efeb; border-radius: 3px; padding: 1px 4px;
+    }
+    #copy-popup .popup-day-time {
+      font-size: 11.5px; color: #777;
+      font-variant-numeric: tabular-nums;
+    }
+    #copy-popup .popup-day-time strong {
+      color: #333; font-weight: 600;
+    }
+
+    #copy-popup .popup-actions {
+      display: flex; gap: 8px; margin-top: 12px;
+    }
+
+    #copy-popup .btn-copy {
+      flex: 1; background: #1a1a1a; color: #fff;
+      border: none; border-radius: 6px; padding: 7px 12px;
+      font-family: inherit; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: background 0.12s;
+    }
+    #copy-popup .btn-copy:hover { background: #333; }
+    #copy-popup .btn-copy.copied { background: #2ECC40; }
+
+    #copy-popup .btn-close {
+      background: #f0efeb; color: #555;
+      border: none; border-radius: 6px; padding: 7px 10px;
+      font-family: inherit; font-size: 12px; cursor: pointer;
+    }
+    #copy-popup .btn-close:hover { background: #e4e3df; }
+
+    /* ── Footer ── */
+    footer {
+      background: #111; color: #fff;
+      padding: 24px 20px;
+    }
+
+    .footer-inner {
+      max-width: 900px; margin: 0 auto;
+    }
+
+    .footer-social { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .social-link {
+      display: flex; align-items: center; gap: 7px;
+      color: #999; text-decoration: none;
+      font-size: 11.5px; font-weight: 500;
+      padding: 6px 12px 6px 9px;
+      border: 1px solid #2a2a2a; border-radius: 20px;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .social-link:hover { color: #fff; border-color: #444; background: #1e1e1e; }
+    .social-link svg { width: 13px; height: 13px; flex-shrink: 0; fill: currentColor; }
+
+  </style>
+</head>
+<body>
+
+<div class="main">
+  <div class="header">
+    <svg class="logo-img" viewBox="0 0 1053 117" xmlns="http://www.w3.org/2000/svg" fill="#111111">
+      <path d="M85.6224 1.40637C91.8371 1.40637 96.8143 6.37668 96.8143 12.4667C96.8143 18.5567 91.8552 23.5361 85.6314 23.5452C79.6624 23.5452 74.6943 18.584 74.6852 12.494C74.6852 6.40398 79.6533 1.41546 85.6132 1.41546M76.3867 93.1932L76.323 31.3921L95.2219 31.3739L95.2856 93.175L76.3867 93.1932Z"/>
+      <path d="M44.877 87.724L69.8541 31.3848L49.8452 31.403L36.2056 64.4928L21.1374 31.4303L0.00012207 31.4576L25.9781 84.7929L26.0236 117L33.5577 116.991L34.4312 117V116.991L44.9134 116.982L44.877 87.724Z"/>
+      <path d="M220.252 87.724L245.239 31.3848L225.23 31.403L211.581 64.4928L196.513 31.4303L175.385 31.4576L201.363 84.7929L201.408 117L208.942 116.991L209.807 117V116.991L220.298 116.982L220.252 87.724Z"/>
+      <path d="M151.581 85.1556C148.851 91.1273 142.646 94.8687 134.939 94.8687C116.786 94.8869 104.22 81.0956 104.202 62.0701C104.184 43.6635 115.976 29.4809 134.247 29.4627C145.303 29.4536 150.162 35.5344 151.408 38.3928V31.3015L169.679 31.2833L169.725 82.0241C169.725 87.7409 170.107 91.719 170.234 93.0844L152.091 93.1027C151.845 91.7372 151.59 88.3782 151.59 85.7656V85.1465L151.581 85.1556ZM137.405 78.5832C144.984 78.5832 151.445 72.6024 151.436 62.152C151.417 51.465 145.075 45.8756 137.368 45.8756C129.288 45.8847 123.201 51.4831 123.219 62.1793C123.228 72.3748 129.57 78.5923 137.405 78.5741"/>
+      <path d="M260.919 1.23828C267.133 1.23828 272.111 6.20861 272.111 12.2986C272.111 18.3886 267.152 23.368 260.937 23.3771C254.968 23.3771 249.991 18.4159 249.981 12.3259C249.981 6.23592 254.95 1.24739 260.91 1.24739M251.683 93.0161L251.619 31.2149L270.518 31.1967L270.582 92.9978L251.683 93.0161Z"/>
+      <path d="M326.88 84.9843C324.15 90.956 317.945 94.6883 310.238 94.6974C292.085 94.7156 279.519 80.9244 279.501 61.8988C279.483 43.4923 291.275 29.3096 309.546 29.2914C320.602 29.2823 325.46 35.3632 326.707 38.2307V31.1393L344.978 31.1211L345.024 81.8529C345.024 87.5696 345.406 91.5477 345.533 92.9132L327.389 92.9314C327.144 91.5659 326.889 88.2159 326.889 85.6033V84.9843H326.88ZM312.703 78.4119C320.283 78.4119 326.743 72.4311 326.734 61.9898C326.716 51.2936 320.374 45.7043 312.667 45.7134C304.587 45.7225 298.5 51.321 298.518 62.0172C298.527 72.2127 304.869 78.4301 312.703 78.4119Z"/>
+      <path d="M429.185 84.8926C426.456 90.8642 420.25 94.5965 412.543 94.6056C394.39 94.6238 381.824 80.8326 381.806 61.807C381.788 43.4005 393.58 29.2178 411.852 29.1996C422.907 29.1905 427.766 35.2714 429.012 38.1389V31.0475L447.284 31.0293L447.329 81.7611C447.329 87.4779 447.711 91.465 447.839 92.8305L429.695 92.8487C429.449 91.4832 429.194 88.1242 429.194 85.5116V84.8926H429.185ZM415.018 78.311C422.598 78.311 429.058 72.3302 429.049 61.8889C429.031 51.1928 422.689 45.6034 414.982 45.6125C406.902 45.6216 400.814 51.2201 400.832 61.9163C400.842 72.1118 407.184 78.3292 415.018 78.311Z"/>
+      <path d="M480.054 92.8066L461.156 92.8248L461.101 31.0237L479.372 31.0055V38.0968C482.73 32.2526 490.309 29.376 496.651 29.376C512.193 29.3578 519.162 40.4272 519.172 53.9818L519.208 92.7793L500.309 92.7975L500.273 57.2316C500.273 51.1416 497.033 46.5445 490.2 46.5445C483.985 46.5445 480.009 51.1507 480.018 57.3772L480.054 92.8157V92.8066Z"/>
+      <path d="M592.79 81.6297C592.79 87.2281 593.172 91.3337 593.299 92.69L575.156 92.7082C575.028 91.9709 574.655 89.2308 574.655 86.7457C571.798 90.9786 565.583 94.0919 558.131 94.0919C540.725 94.1101 527.54 80.6921 527.531 61.6665C527.513 43.26 539.924 29.4506 557.458 29.4323C568.022 29.4232 572.626 33.4013 574.118 35.759L574.082 2.67826L592.726 2.66003L592.799 81.6297H592.79ZM560.47 77.1782C567.804 77.1782 574.382 71.944 574.382 61.7485C574.364 51.4255 567.776 46.4552 560.442 46.4643C553.108 46.4734 546.521 51.4528 546.53 61.7758C546.539 71.9713 553.136 77.1874 560.47 77.1782Z"/>
+      <path d="M655.922 46.7481L655.968 92.637L637.069 92.6551L637.023 46.7663H627.205L627.187 30.8631H637.005V25.5105C636.987 11.3369 645.558 1.62385 660.599 1.61475C664.457 1.61475 667.806 2.10633 669.553 2.97113L669.571 18.3918C668.579 18.1461 666.959 17.7728 663.975 17.7728C660.617 17.7728 655.895 19.2748 655.904 26.1204V30.8449L669.334 30.8267V46.7481L655.922 46.7663V46.7481Z"/>
+      <path d="M715.469 49.4283C713.358 48.9367 711.366 48.8093 709.5 48.8093C701.921 48.8184 695.078 53.2972 695.096 65.6137L695.124 92.5953L676.234 92.6136L676.17 30.8124L694.441 30.7942V39.1235C697.671 32.1596 705.497 30.157 710.474 30.157C712.339 30.157 714.204 30.3936 715.451 30.7669L715.469 49.4192V49.4283Z"/>
+      <path d="M733.079 0.787231C739.294 0.787231 744.271 5.75756 744.271 11.8476C744.271 17.9376 739.312 22.917 733.097 22.9261C727.128 22.9261 722.151 17.9649 722.142 11.8749C722.142 5.78487 727.11 0.796343 733.07 0.796343M723.843 92.5741L723.78 30.7729L742.679 30.7548L742.742 92.5559L723.843 92.5741Z"/>
+      <path d="M812.333 74.7052C809.358 85.4014 799.549 94.368 783.89 94.3771C766.856 94.3953 751.688 82.2244 751.66 61.4602C751.642 41.5607 766.419 28.8619 782.452 28.8436C801.596 28.8254 813.416 40.6322 813.434 60.5225C813.434 63.1351 813.189 65.9936 813.07 66.3668L770.059 66.4123C770.441 73.3762 776.783 78.3465 784.117 78.3283C790.95 78.3283 794.799 75.0876 796.537 70.2356L812.333 74.6961V74.7052ZM795.163 54.205C794.918 49.4804 791.678 43.7637 782.725 43.7637C774.772 43.7728 770.796 49.6261 770.423 54.2232L795.163 54.205Z"/>
+      <path d="M841.454 92.4507L822.555 92.4689L822.5 30.6677L840.771 30.6495V37.7409C844.129 31.8966 851.708 29.0291 858.05 29.02C873.592 29.0018 880.562 40.0621 880.571 53.6258L880.607 92.4233L861.708 92.4415L861.672 56.8756C861.672 50.7856 858.433 46.1885 851.599 46.1885C845.384 46.1885 841.408 50.7947 841.417 57.0213L841.454 92.4598V92.4507Z"/>
+      <path d="M954.19 81.2737C954.19 86.8721 954.572 90.9686 954.699 92.334L936.556 92.3523C936.428 91.6058 936.055 88.8749 936.055 86.3806C933.198 90.6136 926.983 93.7268 919.531 93.7359C902.125 93.7541 888.94 80.3361 888.931 61.3106C888.913 42.904 901.324 29.0946 918.858 29.0764C929.422 29.0673 934.026 33.0363 935.519 35.4031L935.482 2.32227L954.126 2.30408L954.199 81.2737H954.19ZM921.87 76.8314C929.204 76.8223 935.782 71.5971 935.782 61.3925C935.764 51.0787 929.176 46.0992 921.843 46.1174C914.509 46.1174 907.921 51.0968 907.93 61.4198C907.939 71.6153 914.536 76.8314 921.87 76.8314Z"/>
+      <path d="M979.047 71.9348C979.302 76.1587 982.286 80.2642 988.747 80.2551C993.597 80.2551 995.953 77.6334 995.953 74.9024C995.953 72.6721 994.461 70.7969 989.866 69.8138L982.778 68.2025C969.602 65.3532 964.37 57.8978 964.361 49.1952C964.352 37.88 974.288 28.6676 988.083 28.6494C1005.98 28.6312 1012.2 39.819 1012.83 47.0286L997.173 49.9053C996.672 45.7997 994.061 42.3223 988.337 42.3223C984.734 42.3223 981.631 44.4434 981.631 47.675C981.631 50.2876 983.751 51.7805 986.49 52.272L994.698 53.8833C1007.5 56.4777 1013.72 64.188 1013.73 73.2639C1013.74 83.8326 1005.67 94.1556 989.138 94.1829C969.748 94.2011 963.524 81.6387 963.014 74.8023L979.047 71.9257V71.9348Z"/>
+      <path d="M1034.16 3.07282e-05C1044.02 -0.0181755 1052.1 8.0563 1052.1 17.915C1052.11 27.7737 1044.05 35.8026 1034.2 35.8208C1024.34 35.8299 1016.31 27.8101 1016.3 17.9514C1016.3 8.09272 1024.31 0.00913386 1034.17 3.07282e-05M1034.19 31.861C1041.88 31.8519 1047.82 25.7073 1047.81 17.915C1047.81 10.1318 1041.85 3.9508 1034.17 3.9599C1026.48 3.9599 1020.59 10.1591 1020.6 17.9423C1020.6 25.7255 1026.52 31.861 1034.2 31.861M1033.99 20.9737H1032.53L1032.54 27.446H1027.52L1027.5 8.21104H1035.57C1039.29 8.20194 1042.2 11.0057 1042.2 14.5286C1042.2 16.9956 1040.8 19.0711 1038.77 20.0906L1042.46 27.4369H1036.95L1033.99 20.9645V20.9737ZM1034.61 16.9136C1036.15 16.9136 1037.12 15.9942 1037.12 14.5923C1037.12 13.1358 1036.15 12.2711 1034.61 12.2711H1032.53V16.9136H1034.61Z"/>
+    </svg>
+    <div class="header-divider"></div>
+  </div>
+  <!-- cards appended by JS -->
+</div>
+
+<!-- Copy popup -->
+<div id="copy-popup">
+  <div class="popup-title" id="popup-title">—</div>
+  <div class="popup-select-all" id="popup-select-all">deselect all</div>
+  <div id="popup-rows"></div>
+  <div class="popup-actions">
+    <button class="btn-copy" id="btn-copy">Copy for email</button>
+    <button class="btn-close" id="btn-close">✕</button>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-social">
+      <a class="social-link" href="https://www.instagram.com/yiayiaandfriends/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        Instagram
+      </a>
+      <a class="social-link" href="https://www.instagram.com/yiayiaandfriends_kor/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        Instagram 🇰🇷
+      </a>
+      <a class="social-link" href="https://www.instagram.com/yiayiaandfriends_cafe/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        Instagram Café
+      </a>
+      <a class="social-link" href="https://www.facebook.com/yiayiaandfriends" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        Facebook
+      </a>
+      <a class="social-link" href="https://gr.pinterest.com/yiayiaandfriends/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+        Pinterest
+      </a>
+      <a class="social-link" href="https://www.youtube.com/channel/UCGUdWoa1GjbUGrJDmJ8tnTA/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+        YouTube
+      </a>
+      <a class="social-link" href="https://www.linkedin.com/company/yiayia-and-friends" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        LinkedIn
+      </a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Cities sorted most-ahead timezone first
+  // Colors: dominant flag color matched from graphic palette
+  // 🇰🇷 Korea: Red     → #E8231A
+  // 🇬🇷 Greece: Blue   → #1565C0
+  // 🇦🇹 Austria: Red   → #E91E8C  (palette hot-pink, distinct from Korea red)
+  // 🇺🇸 USA: Red       → Utah #FF5500 / LA #E8231A (two shades, red-family)
+  const cities = [
+    { name: "Seoul",                   flag: "🇰🇷", tz: "Asia/Seoul",          color: "#E8231A", people: ["Thomas"] },
+    { name: "Thessaloniki / Crete",    flag: "🇬🇷", tz: "Europe/Athens",       color: "#1565C0", people: ["Kostas", "Dimitris", "Orestis", "Alexis"] },
+    { name: "Vienna",                  flag: "🇦🇹", tz: "Europe/Vienna",       color: "#E91E8C", people: ["Philipp"] },
+    { name: "Utah",                    flag: "🇺🇸", tz: "America/Denver",      color: "#FF5500", people: ["Tammie"] },
+    { name: "Los Angeles",             flag: "🇺🇸", tz: "America/Los_Angeles", color: "#E8231A", people: ["Josh", "Alice"] },
+  ];
+
+  // Sort by UTC offset (descending = most ahead first)
+  function getOffset(tz) {
+    const now = new Date();
+    const a = new Date(now.toLocaleString("en-US", { timeZone: tz }));
+    const b = new Date(now.toLocaleString("en-US", { timeZone: "UTC" }));
+    return Math.round((a - b) / 60000);
+  }
+  cities.sort((a, b) => getOffset(b.tz) - getOffset(a.tz));
+
+  const avatarPalette = ["#E8231A","#1565C0","#E91E8C","#FF5500","#2ECC40","#7B2FBE","#00B4D8","#FFB300"];
+  function nameToColor(name) {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+    return avatarPalette[Math.abs(h) % avatarPalette.length];
+  }
+
+  function getUTCOffset(tz, now) {
+    const a = new Date(now.toLocaleString("en-US", { timeZone: tz }));
+    const b = new Date(now.toLocaleString("en-US", { timeZone: "UTC" }));
+    const d = Math.round((a - b) / 60000);
+    const sign = d >= 0 ? "+" : "−";
+    const hh = Math.floor(Math.abs(d) / 60), m = Math.abs(d) % 60;
+    return m === 0 ? `UTC${sign}${hh}` : `UTC${sign}${hh}:${String(m).padStart(2,"0")}`;
+  }
+
+  // Slots are every 30 minutes
+  const SLOT_MIN = 30;
+  const SLOT_MS  = SLOT_MIN * 60_000;
+  const PAST     = 48;  // 48 × 30 min = 24 h of history
+  const FUTURE   = 96;  // 96 × 30 min = 48 h ahead
+  const TOTAL    = PAST + FUTURE;
+  const COL_W    = 40;  // full-hour col width
+  const HALF_W   = 30;  // half-hour col width
+
+  function getBase() {
+    const t = new Date();
+    // Round down to nearest 30 min
+    t.setMinutes(t.getMinutes() < 30 ? 0 : 30, 0, 0);
+    return new Date(t.getTime() - PAST * SLOT_MS);
+  }
+  function slotAt(ms, i) { return new Date(ms + i * SLOT_MS); }
+  function isHalfHour(d) { return d.getUTCMinutes() === 30; }  // all slots are :00 or :30
+
+  function localHourNum(d,tz) { return parseInt(d.toLocaleString("en-US",{timeZone:tz,hour:"numeric",hour12:false}),10)%24; }
+  function localMinutes(d,tz) {
+    return parseInt(d.toLocaleString("en-US",{timeZone:tz,minute:"2-digit"}),10);
+  }
+
+  function fmtHour(d, tz) {
+    const mins = localMinutes(d, tz);
+    if (mins === 30) {
+      // show just ":30"
+      return ":30";
+    }
+    return d.toLocaleString("en-US",{timeZone:tz,hour:"numeric",hour12:true})
+      .replace(/\s?AM/i,"am").replace(/\s?PM/i,"pm").replace(":00","").toLowerCase().trim();
+  }
+  function fmtDate(d, tz) {
+    return d.toLocaleDateString("en-US",{timeZone:tz,weekday:"short",month:"short",day:"numeric"});
+  }
+  function fmtDateLong(d, tz) {
+    return d.toLocaleDateString("en-US",{timeZone:tz,weekday:"long",month:"long",day:"numeric",year:"numeric"});
+  }
+
+  // ── Sync scroll ──────────────────────────────────────
+  const allScrollEls = [];
+  let syncing = false;
+  function syncScroll(src) {
+    if (syncing) return; syncing = true;
+    allScrollEls.forEach(el => { if (el !== src) el.scrollLeft = src.scrollLeft; });
+    syncing = false;
+  }
+  function makeDraggable(el) {
+    let sx, ss, down = false;
+    el.addEventListener("mousedown", e => { down=true; sx=e.pageX; ss=el.scrollLeft; el.classList.add("grabbing"); });
+    window.addEventListener("mouseup",   () => { down=false; el.classList.remove("grabbing"); });
+    window.addEventListener("mousemove", e => { if (down) el.scrollLeft = ss-(e.pageX-sx); });
+  }
+
+  // ── Copy popup ───────────────────────────────────────
+  const popup          = document.getElementById("copy-popup");
+  const popupTitle     = document.getElementById("popup-title");
+  const popupRows      = document.getElementById("popup-rows");
+  const popupSelectAll = document.getElementById("popup-select-all");
+  const btnCopy        = document.getElementById("btn-copy");
+  const btnClose       = document.getElementById("btn-close");
+
+  // Stores per-city row data for re-building copy text on checkbox change
+  let popupCityData = [];
+
+  function rebuildCopyText() {
+    const lines = popupCityData
+      .filter(d => d.checked)
+      .map(d => `${d.flag} ${d.name} (${d.utcOff})\n${d.dayStr} · ${d.timeStr}`);
+    return lines.join("\n\n");
+  }
+
+  function updateSelectAllLabel() {
+    const allChecked = popupCityData.every(d => d.checked);
+    popupSelectAll.textContent = allChecked ? "deselect all" : "select all";
+  }
+
+  popupSelectAll.addEventListener("click", () => {
+    const allChecked = popupCityData.every(d => d.checked);
+    popupCityData.forEach(d => { d.checked = !allChecked; d.cb.checked = !allChecked; d.block.classList.toggle("unchecked", allChecked); });
+    updateSelectAllLabel();
+  });
+
+  btnClose.addEventListener("click", () => { popup.style.display = "none"; });
+  btnCopy.addEventListener("click", () => {
+    const text = rebuildCopyText();
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      btnCopy.textContent = "Copied ✓";
+      btnCopy.classList.add("copied");
+      setTimeout(() => { btnCopy.textContent = "Copy for email"; btnCopy.classList.remove("copied"); }, 2000);
+    });
+  });
+
+  document.addEventListener("click", e => {
+    if (!popup.contains(e.target) && !e.target.classList.contains("hour-col")) {
+      popup.style.display = "none";
+    }
+  });
+
+  function showPopup(slotMs, clickX, clickY) {
+    const slotDate = new Date(slotMs);
+
+    popupTitle.textContent = "Time across locations";
+    popupRows.innerHTML = "";
+    popupCityData = [];
+
+    cities.forEach(city => {
+      const utcOff = getUTCOffset(city.tz, slotDate);
+
+      const timeStr = slotDate.toLocaleString("en-US", {
+        timeZone: city.tz, hour: "numeric", minute: "2-digit", hour12: true
+      }).replace(/\s?AM/i, " am").replace(/\s?PM/i, " pm").trim();
+
+      const dayStr = slotDate.toLocaleDateString("en-US", {
+        timeZone: city.tz, weekday: "long", month: "long", day: "numeric"
+      });
+
+      const block = document.createElement("div");
+      block.className = "popup-city-block";
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox"; cb.checked = true;
+
+      const info = document.createElement("div");
+      info.className = "popup-city-info";
+      info.innerHTML = `
+        <div class="popup-city-name">${city.flag} ${city.name} <span class="popup-tz">${utcOff}</span></div>
+        <div class="popup-day-time">${dayStr} · <strong>${timeStr}</strong></div>
+      `;
+
+      block.appendChild(cb);
+      block.appendChild(info);
+      popupRows.appendChild(block);
+
+      const entry = { flag: city.flag, name: city.name, utcOff, timeStr, dayStr, checked: true, cb, block };
+      popupCityData.push(entry);
+
+      // Toggle check on row or checkbox click
+      block.addEventListener("click", e => {
+        if (e.target !== cb) cb.checked = !cb.checked;
+        entry.checked = cb.checked;
+        block.classList.toggle("unchecked", !cb.checked);
+        updateSelectAllLabel();
+      });
+      cb.addEventListener("click", e => e.stopPropagation());
+    });
+
+    updateSelectAllLabel();
+
+    // Position popup near click, keep within viewport
+    popup.style.display = "block";
+    const pw = popup.offsetWidth  || 300;
+    const ph = popup.offsetHeight || 260;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const x  = Math.min(clickX + 12, vw - pw - 12);
+    const y  = Math.min(clickY + 12, vh - ph - 12);
+    popup.style.left = x + "px";
+    popup.style.top  = y + "px";
+    btnCopy.textContent = "Copy for email";
+    btnCopy.classList.remove("copied");
+  }
+
+  // ── WorldTimeBuddy color bands ───────────────────────
+  // Matches WTB's night/morning/work/evening/night gradient
+  function slotBg(localHour) {
+    if (localHour >= 22 || localHour < 6)  return "#b8c4cc"; // night — darkest
+    if (localHour < 8)                      return "#cddae3"; // early morning
+    if (localHour < 9)                      return "#dde8ef"; // morning transition
+    if (localHour < 18)                     return "#eef3f6"; // work hours — lightest
+    if (localHour < 20)                     return "#dde8ef"; // early evening
+    if (localHour < 22)                     return "#cddae3"; // late evening
+    return "#b8c4cc";
+  }
+  function slotFg(localHour) {
+    if (localHour >= 22 || localHour < 6)  return "#6a7a85";
+    if (localHour < 9 || localHour >= 20)  return "#5a6e7a";
+    return "#444";
+  }
+
+  // ── Build cards ──────────────────────────────────────
+  const main = document.querySelector(".main");
+  let baseMs;  // set after building
+
+  cities.forEach(city => {
+    const sid  = city.tz.replace("/","_") + "_" + city.name.replace(/\s/g,"");
+    const card = document.createElement("div"); card.className = "clock-card";
+    const top  = document.createElement("div"); top.className  = "card-top";
+    const left = document.createElement("div"); left.className = "card-left";
+
+    left.innerHTML = `
+      <div class="city-row">
+        <span class="flag">${city.flag}</span>
+        <span class="city">${city.name}</span>
+        <span class="tz-badge" id="tz_${sid}">UTC</span>
+      </div>
+      <div class="time" id="time_${sid}">--:--:--</div>
+      <div class="date-display" id="dated_${sid}">...</div>
+    `;
+
+    const vd = document.createElement("div"); vd.className = "v-divider";
+    const people = document.createElement("div");
+    people.className = "people";
+    people.id = `people_${sid}`;
+
+    // Normalise people entries to {name, slack} objects
+    city.people = city.people.map(p => typeof p === "string" ? { name: p, slack: p.toLowerCase() } : p);
+
+    city.people.forEach(p => {
+      const a = document.createElement("a");
+      a.className = "person";
+      a.href = `https://slack.com/app_redirect?channel=@${p.slack}`;
+      a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.title = `Message ${p.name} on Slack`;
+      a.innerHTML = `<div class="avatar" style="background:${city.color}">${p.name.slice(0,2).toUpperCase()}</div><span class="person-name">${p.name}</span>`;
+      people.appendChild(a);
+    });
+
+    if (city.people.length === 0) {
+      people.style.minHeight = "30px";
+    }
+
+    top.appendChild(left); top.appendChild(vd); top.appendChild(people);
+
+    const hd = document.createElement("div"); hd.className = "h-divider";
+    const sc = document.createElement("div"); sc.className = "timeline-scroll";
+    const ht = document.createElement("div"); ht.className = "hour-track"; ht.id = `ht_${sid}`;
+
+    sc.appendChild(ht);
+    sc.addEventListener("scroll", () => syncScroll(sc), { passive: true });
+    makeDraggable(sc);
+    allScrollEls.push(sc);
+
+    card.appendChild(top); card.appendChild(hd); card.appendChild(sc);
+    main.appendChild(card);
+  });
+
+  // ── Build timeline ───────────────────────────────────
+  function shortDate(d, tz) {
+    // e.g. "Fri 28"
+    return d.toLocaleDateString("en-US", { timeZone: tz, weekday: "short", day: "numeric" });
+  }
+
+  function buildTimelines(bMs) {
+    cities.forEach(city => {
+      const sid = city.tz.replace("/","_") + "_" + city.name.replace(/\s/g,"");
+      const ht  = document.getElementById(`ht_${sid}`);
+      ht.innerHTML = "";
+      let prevDate = null;
+
+      for (let i = 0; i < TOTAL; i++) {
+        const t          = slotAt(bMs, i);
+        const isCur      = i === PAST;
+        const lh         = localHourNum(t, city.tz);
+        const mins       = localMinutes(t, city.tz);
+        const isMidnight = lh === 0 && mins === 0;
+        const dateStr    = fmtDate(t, city.tz);
+        // Only mark new day on full-hour boundaries
+        const isNewDay   = dateStr !== prevDate && mins === 0;
+        if (mins === 0) prevDate = dateStr;
+
+        const isHalf  = mins === 30;
+        const hc = document.createElement("div");
+
+        hc.className = "hour-col"
+          + (isCur               ? " current"  : "")
+          + (isNewDay && !isCur  ? " midnight" : "")
+          + (isHalf              ? " half"     : "");
+
+        // Width: date chips slightly wider, half-hour cols narrower
+        hc.style.width = (isNewDay && !isCur ? 52 : isHalf ? HALF_W : COL_W) + "px";
+
+        if (isCur) {
+          hc.style.background = "#333333";
+          hc.style.color = "#fff";
+          hc.style.borderRadius = "4px";
+        } else {
+          hc.style.background = slotBg(lh);
+          hc.style.color = slotFg(lh);
+        }
+
+        // Label: new-day cols show short date, half-hour shows ":30", else full hour
+        hc.textContent = (isNewDay && !isCur) ? shortDate(t, city.tz) : fmtHour(t, city.tz);
+        hc.title = `${fmtDate(t, city.tz)} · ${fmtHour(t, city.tz)}`;
+        hc.dataset.slotMs = t.getTime();
+
+        hc.addEventListener("click", function(e) {
+          e.stopPropagation();
+          showPopup(parseInt(this.dataset.slotMs), e.clientX, e.clientY);
+        });
+
+        ht.appendChild(hc);
+      }
+    });
+  }
+
+  // ── Tick ─────────────────────────────────────────────
+  function tick() {
+    const now = new Date();
+    cities.forEach(city => {
+      const sid = city.tz.replace("/","_") + "_" + city.name.replace(/\s/g,"");
+      document.getElementById(`time_${sid}`).textContent = now.toLocaleTimeString("en-GB",{
+        timeZone:city.tz, hour:"2-digit", minute:"2-digit", second:"2-digit"
+      });
+      document.getElementById(`dated_${sid}`).textContent = now.toLocaleDateString("en-GB",{
+        timeZone:city.tz, weekday:"short", month:"short", day:"numeric"
+      });
+      document.getElementById(`tz_${sid}`).textContent = getUTCOffset(city.tz, now);
+    });
+  }
+
+  // ── CSV people loader ─────────────────────────────────
+  // Tries to fetch people.csv from the same folder.
+  // CSV format: name,timezone,slack_handle
+  // Falls back to hardcoded data if the file isn't found.
+  function applyPeople(csvText) {
+    const rows = csvText.trim().split("\n").slice(1); // skip header
+    // Clear existing people from all cities
+    cities.forEach(c => c.people = []);
+    rows.forEach(row => {
+      const cols = row.split(",").map(s => s.trim());
+      if (cols.length < 2) return;
+      const [name, tz, slackHandle] = cols;
+      if (!name || !tz) return;
+      const city = cities.find(c => c.tz === tz);
+      if (city) {
+        city.people.push({ name, slack: slackHandle || name.toLowerCase() });
+      }
+    });
+    // Convert plain-string people to objects if they aren't already
+    cities.forEach(c => {
+      c.people = c.people.map(p => typeof p === "string" ? { name: p, slack: p.toLowerCase() } : p);
+    });
+  }
+
+  // Rebuild the people section in a card without re-rendering the timeline
+  function refreshPeopleCards() {
+    cities.forEach(city => {
+      const sid = city.tz.replace("/","_") + "_" + city.name.replace(/\s/g,"");
+      const peopleEl = document.getElementById(`people_${sid}`);
+      if (!peopleEl) return;
+      peopleEl.innerHTML = "";
+      city.people.forEach(p => {
+        const a = document.createElement("a");
+        a.className = "person";
+        a.href = `https://slack.com/app_redirect?channel=@${p.slack}`;
+        a.target = "_blank"; a.rel = "noopener noreferrer";
+        a.title = `Message ${p.name} on Slack`;
+        a.innerHTML = `<div class="avatar" style="background:${city.color}">${p.name.slice(0,2).toUpperCase()}</div><span class="person-name">${p.name}</span>`;
+        peopleEl.appendChild(a);
+      });
+    });
+  }
+
+  // ── Init ─────────────────────────────────────────────
+  baseMs = getBase().getTime();
+  buildTimelines(baseMs);
+  tick();
+
+  requestAnimationFrame(() => {
+    const visibleW = allScrollEls[0].clientWidth;
+    const avgW  = (COL_W + HALF_W) / 2;
+    const target = PAST * avgW - Math.floor(visibleW / 2) + avgW / 2;
+    allScrollEls.forEach(el => { el.scrollLeft = Math.max(0, target); });
+  });
+
+  setInterval(tick, 1000);
+
+  // Try loading people.csv (works when served from a local/web server)
+  fetch("people.csv")
+    .then(r => { if (!r.ok) throw new Error("no csv"); return r.text(); })
+    .then(csv => { applyPeople(csv); refreshPeopleCards(); })
+    .catch(() => { /* silent — hardcoded data already rendered */ });
+</script>
+</body>
+</html>
