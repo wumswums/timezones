@@ -54,7 +54,7 @@
     }
 
     .logo-img {
-      height: 30px;
+      height: 26px;
       width: auto;
       display: block;
     }
@@ -81,6 +81,7 @@
     .city-row  { display: flex; align-items: center; gap: 6px; }
     .flag      { font-size: 15px; line-height: 1; }
     .city      { font-size: 15px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.1px; }
+    .tz-badge-mobile { display: none; }
 
     .tz-badge {
       font-size: 10px; font-weight: 500;
@@ -109,10 +110,82 @@
     }
     .person:hover { background: #eceae4; border-color: #d5d3ce; }
 
-    /* mobile: pill becomes just the avatar circle */
+    /* ── Mobile: compact layout ── */
     @media (max-width: 600px) {
-      .person { padding: 3px; border-radius: 50%; }
+      /* Tighter outer padding */
+      .main { padding: 14px 10px 18px; gap: 5px; }
+
+      /* Card top: single tight row */
+      .card-top { padding: 6px 12px; gap: 8px; }
+
+      /* card-left: pill on left, time aligned after longest pill */
+      .card-left {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        min-width: unset;
+        flex: 1;
+        gap: 16px;
+        flex-wrap: nowrap;
+        overflow: hidden;
+      }
+
+      /* Time: no order override, sits naturally after pill, pushed right */
+      .time {
+        order: unset;
+        font-size: 17px; font-weight: 700;
+        letter-spacing: -0.3px; line-height: 1;
+        margin-top: 0; white-space: nowrap;
+        flex-shrink: 0;
+      }
+      /* No separator */
+      .time::before { content: ""; }
+      .time::after  { content: ""; }
+
+      /* City row becomes the pill */
+      .flag  { display: none; }
+      .city-row {
+        display: inline-flex; align-items: center;
+        justify-content: space-between;
+        background: #ebebeb; border-radius: 999px;
+        padding: 3px 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        min-width: 0;
+        gap: 8px;
+      }
+      .city  { font-size: 12px; font-weight: 700; color: #1a1a1a; }
+
+      /* tz inside pill — plain text, no extra styling */
+      .tz-badge-mobile {
+        display: inline;
+        background: none; border-radius: 0; padding: 0;
+        font-size: 11px; font-weight: 400; color: #777;
+        letter-spacing: 0;
+      }
+      .tz-badge-mobile::before { content: ""; }
+      .tz-badge-mobile::after  { content: ""; }
+
+      /* Show mobile tz-badge, hide desktop date-display */
+
+      /* Hide date + tz on mobile */
+      .date-display { display: none; }
+
+      /* Shorter divider */
+      .v-divider { height: 20px; }
+
+      /* People: avatar circles only, smaller */
+      .person { padding: 2px; border-radius: 50%; }
       .person-name { display: none; }
+      .avatar { width: 20px; height: 20px; font-size: 8px; }
+      .people { gap: 4px; }
+
+      /* Shorter timeline rows */
+      .hour-track { height: 18px; }
+      .hour-col { font-size: 8.5px; }
+
+      /* Smaller logo */
+      .logo-img { height: 22px; }
     }
 
     .avatar {
@@ -174,6 +247,75 @@
       font-weight: 700;
       border-radius: 4px;
     }
+
+    /* ── Person popup ── */
+    #person-popup {
+      display: none;
+      position: fixed;
+      z-index: 30;
+      background: #fff;
+      border: 1px solid #e4e3df;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      padding: 12px 14px;
+      min-width: 200px;
+      font-family: inherit;
+    }
+    #person-popup .pp-name {
+      font-size: 13px; font-weight: 700; color: #1a1a1a;
+      margin-bottom: 8px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    #person-popup .pp-avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: #8a9099; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; flex-shrink: 0;
+    }
+    #person-popup .pp-links { display: flex; flex-direction: column; gap: 5px; }
+    #person-popup .pp-link {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 12px; color: #555; text-decoration: none;
+      padding: 5px 7px; border-radius: 6px;
+      transition: background 0.1s;
+    }
+    #person-popup .pp-link:hover { background: #f5f4f0; color: #111; }
+    #person-popup .pp-link svg { width: 14px; height: 14px; flex-shrink: 0; fill: currentColor; opacity: 0.6; }
+
+    /* ── Avatar stacking ── */
+    .people-stacked { gap: 0 !important; }
+
+    /* Collapsed: overlap the circles */
+    .people-stacked:not(:hover) .person {
+      margin-right: -7px;
+      box-shadow: 0 0 0 2px #fff;
+      transition: margin 0.22s ease, box-shadow 0.22s ease;
+      position: relative;
+    }
+    .people-stacked:not(:hover) .person:nth-child(n+4) { display: none; }
+
+    /* "+N" overflow bubble */
+    .people-more {
+      display: none;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #d4d7dc; color: #555;
+      font-size: 9px; font-weight: 700;
+      align-items: center; justify-content: center;
+      flex-shrink: 0; cursor: default;
+      box-shadow: 0 0 0 2px #fff;
+      margin-left: 10px;
+      position: relative;
+    }
+    .people-stacked:not(:hover) .people-more { display: flex; }
+
+    /* Expanded on hover */
+    .people-stacked:hover { gap: 6px !important; }
+    .people-stacked:hover .person {
+      margin-right: 0;
+      box-shadow: none;
+      display: flex !important;
+    }
+    .people-stacked:hover .people-more { display: none; }
 
     /* ── Copy popup ── */
     #copy-popup {
@@ -278,6 +420,10 @@
     .social-link:hover { color: #fff; border-color: #444; background: #1e1e1e; }
     .social-link svg { width: 13px; height: 13px; flex-shrink: 0; fill: currentColor; }
 
+  
+    @media (max-width: 360px) {
+      .tz-badge-mobile { display: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -309,6 +455,15 @@
 
 <!-- WorldTimeBuddy-style vertical selection indicator -->
 <div id="sel-indicator" style="display:none; position:fixed; pointer-events:none; z-index:20; border:2px solid rgba(46,160,67,0.7); border-radius:3px; box-sizing:border-box; background:rgba(46,160,67,0.2);"></div>
+
+<!-- Person popup -->
+<div id="person-popup">
+  <div class="pp-name">
+    <div class="pp-avatar" id="pp-avatar"></div>
+    <span id="pp-name-text"></span>
+  </div>
+  <div class="pp-links" id="pp-links"></div>
+</div>
 
 <!-- Copy popup -->
 <div id="copy-popup">
@@ -493,6 +648,79 @@
   window.addEventListener("scroll", updateSelIndicator, { passive: true });
   window.addEventListener("resize", updateSelIndicator);
 
+  // ── People builder helper ────────────────────────────
+  function buildPersonEl(p) {
+    const a = document.createElement("div");
+    a.className = "person";
+    a.title = p.name;
+    a.style.cursor = "pointer";
+    a.innerHTML = `<div class="avatar">${p.name.slice(0,2).toUpperCase()}</div><span class="person-name">${p.name}</span>`;
+    a.addEventListener("click", e => { e.stopPropagation(); showPersonPopup(p, e.clientX, e.clientY); });
+    return a;
+  }
+
+  function buildPeopleGroup(container, people) {
+    container.innerHTML = "";
+    const stackAt = window.innerWidth <= 600 ? 1 : 2; // mobile: 2+, desktop: 3+
+    if (people.length > stackAt) container.classList.add("people-stacked");
+    else container.classList.remove("people-stacked");
+    people.forEach(p => container.appendChild(buildPersonEl(p)));
+    if (people.length > stackAt) {
+      const more = document.createElement("div");
+      more.className = "people-more";
+      more.textContent = "+" + (people.length - (stackAt + 1));
+      container.appendChild(more);
+    }
+  }
+
+  // ── Person popup ─────────────────────────────────────
+  const personPopup   = document.getElementById("person-popup");
+  const ppAvatar      = document.getElementById("pp-avatar");
+  const ppNameText    = document.getElementById("pp-name-text");
+  const ppLinks       = document.getElementById("pp-links");
+
+  function showPersonPopup(p, x, y) {
+    ppAvatar.textContent   = p.name.slice(0,2).toUpperCase();
+    ppAvatar.style.background = nameToColor(p.name);
+    ppNameText.textContent = p.name;
+    ppLinks.innerHTML = "";
+
+    // Slack DM link — tries desktop app first, falls back to web after 700ms
+    const slackDeep = `slack://user?username=${p.slack}`;
+    const slackWeb  = `https://slack.com/app_redirect?channel=@${p.slack}`;
+    const slackA = document.createElement("a");
+    slackA.className = "pp-link"; slackA.href = slackDeep; slackA.title = "Open DM in Slack"; slackA.rel = "noopener";
+    slackA.addEventListener("click", e => {
+      e.preventDefault();
+      const t = setTimeout(() => window.open(slackWeb, "_blank"), 700);
+      window.location.href = slackDeep;
+      window.addEventListener("blur", () => clearTimeout(t), { once: true });
+    });
+    slackA.innerHTML = `<svg viewBox="0 0 24 24"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>@${p.slack}`;
+    ppLinks.appendChild(slackA);
+
+    // Email link (if available)
+    if (p.email) {
+      const emailA = document.createElement("a");
+      emailA.className = "pp-link"; emailA.href = `mailto:${p.email}`; emailA.target = "_blank"; emailA.rel = "noopener";
+      emailA.innerHTML = `<svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>${p.email}`;
+      ppLinks.appendChild(emailA);
+    }
+
+    personPopup.style.display = "block";
+    const pw = personPopup.offsetWidth  || 210;
+    const ph = personPopup.offsetHeight || 100;
+    const vw = window.innerWidth; const vh = window.innerHeight;
+    personPopup.style.left = Math.min(x + 10, vw - pw - 10) + "px";
+    personPopup.style.top  = Math.min(y + 10, vh - ph - 10) + "px";
+  }
+
+  document.addEventListener("click", e => {
+    if (!personPopup.contains(e.target) && !e.target.closest(".person")) {
+      personPopup.style.display = "none";
+    }
+  });
+
   // ── Copy popup ───────────────────────────────────────
   const popup          = document.getElementById("copy-popup");
   const popupTitle     = document.getElementById("popup-title");
@@ -632,6 +860,7 @@
       <div class="city-row">
         <span class="flag">${city.flag}</span>
         <span class="city">${city.name}</span>
+        <span class="tz-badge tz-badge-mobile" id="tzm_${sid}">UTC</span>
       </div>
       <div class="time" id="time_${sid}">--:--:--</div>
       <div class="date-display"><span id="dated_${sid}">...</span><span class="tz-badge" id="tz_${sid}">UTC</span></div>
@@ -645,15 +874,7 @@
     // Normalise people entries to {name, slack} objects
     city.people = city.people.map(p => typeof p === "string" ? { name: p, slack: p.toLowerCase() } : p);
 
-    city.people.forEach(p => {
-      const a = document.createElement("a");
-      a.className = "person";
-      a.href = p.url || `https://slack.com/app_redirect?channel=@${p.slack}`;
-      a.target = "_blank"; a.rel = "noopener noreferrer";
-      a.title = `Message ${p.name} on Slack`;
-      a.innerHTML = `<div class="avatar">${p.name.slice(0,2).toUpperCase()}</div><span class="person-name">${p.name}</span>`;
-      people.appendChild(a);
-    });
+    buildPeopleGroup(people, city.people);
 
     if (city.people.length === 0) {
       people.style.minHeight = "30px";
@@ -753,7 +974,9 @@
       document.getElementById(`dated_${sid}`).textContent = now.toLocaleDateString("en-GB",{
         timeZone:city.tz, weekday:"short", month:"short", day:"numeric"
       });
-      document.getElementById(`tz_${sid}`).textContent = getUTCOffset(city.tz, now);
+      const utcVal = getUTCOffset(city.tz, now);
+      document.getElementById(`tz_${sid}`).textContent  = utcVal;
+      document.getElementById(`tzm_${sid}`).textContent = utcVal;
     });
   }
 
@@ -768,11 +991,11 @@
     rows.forEach(row => {
       const cols = row.split(",").map(s => s.trim());
       if (cols.length < 2) return;
-      const [name, tz, slackHandle, url] = cols;
+      const [name, tz, slackHandle, url, email] = cols;
       if (!name || !tz) return;
       const city = cities.find(c => c.tz === tz);
       if (city) {
-        city.people.push({ name, slack: slackHandle || name.toLowerCase(), url: url || null });
+        city.people.push({ name, slack: slackHandle || name.toLowerCase(), url: url || null, email: email || null });
       }
     });
     // Convert plain-string people to objects if they aren't already
@@ -787,25 +1010,31 @@
       const sid = city.tz.replace("/","_") + "_" + city.name.replace(/\s/g,"");
       const peopleEl = document.getElementById(`people_${sid}`);
       if (!peopleEl) return;
-      peopleEl.innerHTML = "";
-      city.people.forEach(p => {
-        const a = document.createElement("a");
-        a.className = "person";
-        a.href = p.url || `https://slack.com/app_redirect?channel=@${p.slack}`;
-        a.target = "_blank"; a.rel = "noopener noreferrer";
-        a.title = `Message ${p.name} on Slack`;
-        a.innerHTML = `<div class="avatar">${p.name.slice(0,2).toUpperCase()}</div><span class="person-name">${p.name}</span>`;
-        peopleEl.appendChild(a);
-      });
+      buildPeopleGroup(peopleEl, city.people);
     });
   }
+
+  // ── Mobile pill alignment ────────────────────────────
+  // Makes all city-row pills the same width (= widest pill)
+  // so times always start at the same x position.
+  function alignMobileTimes() {
+    if (window.innerWidth > 600) return;
+    const pills = document.querySelectorAll('.city-row');
+    pills.forEach(p => p.style.minWidth = '');          // reset
+    let maxW = 0;
+    pills.forEach(p => { maxW = Math.max(maxW, p.offsetWidth); });
+    pills.forEach(p => { p.style.minWidth = maxW + 'px'; });
+  }
+  window.addEventListener('resize', () => { alignMobileTimes(); refreshPeopleCards(); });
 
   // ── Init ─────────────────────────────────────────────
   baseMs = getBase().getTime();
   buildTimelines(baseMs);
   tick();
 
-  requestAnimationFrame(() => {
+  document.fonts.ready.then(() => {
+    alignMobileTimes();   // align after fonts are fully loaded
+
     const visibleW = allScrollEls[0].clientWidth;
     // Centre the "now" column in view
     const target = PAST * COL_W - Math.floor(visibleW / 2) + COL_W / 2;
